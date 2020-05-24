@@ -19,6 +19,7 @@ USP - ICC1 - 2020
 // STRUCT
 
 typedef struct {
+    int class;
     char nome[16];
     char sobrenome[16];
     int nusp;
@@ -30,18 +31,23 @@ typedef struct {
 
 // PROTOTYPES
 
-void read_student (aluno *student, int number_of_students);
+void read_student (aluno *student, int number_of_students, int total_students, int c);
 void print_student (aluno *student, int pos);
+
 aluno* allocate_StudentArray (int number_of_students);
+void realloc_StudentArray (aluno* turma, int total_students, int number_of_students);
+
+void search_StudentByName (aluno* turma, int pos, int num, char name[16], char last_name[16]);
+
 float** allocate_statistics (int c);
 void realloc_statistics (int c, float** statistics);
-int search_StudentByName (aluno* turma, int pos, int num, char* name, char* sobrenome);
-void generate_statistics (int c, aluno* turma, int number_of_students, float** statistics);
-void print_statistics (float** statistics);
-void save_statistics (float** statistics, int c);
+void generate_statistics (int c, aluno* turma, int total_students, int number_of_students, float** statistics);
 void free_statistics (float** statistics, int c);
-aluno* create_class (int c, float** statistics, int number_of_students);
-void save_class (float** statistics, int c);
+void print_statistics (float** statistics);
+
+aluno* create_class (int c, float** statistics, int number_of_students, int total_students);
+void realloc_class (aluno* turma, int c, float** statistics, int number_of_students, int total_students);
+void save_data (float** statistics, int c);
 
 // END PROTOTYPES
 
@@ -49,11 +55,17 @@ void save_class (float** statistics, int c);
 // MAIN FUNCTION
 
 int main(){
-    int opcao;
+
     int c = 1;
+    int total_students = 0;
+
+    int opcao;
     int number_of_students;
     float** statistics = NULL;
     aluno* turma;
+    char name[16];
+    char last_name[16];
+
 
     while (1){
         printf("----------------- GERENCIADOR DE NOTAS -------------------\n");
@@ -64,7 +76,7 @@ int main(){
         printf(" 4 - Gravar informacoes de uma turma                      \n");
         printf(" 5 - Encerrar o sistema                                   \n");
         printf("                 -- Digite sua opcao --                   \n");
-        scanf("%d", &opcao);
+        scanf ("                            %d", &opcao);
 
         switch (opcao){
             case 1:
@@ -75,41 +87,33 @@ int main(){
 
                 if (c == 1){
                     statistics = allocate_statistics(c);
+                    turma = create_class(c, statistics, number_of_students, total_students);
                 }
                 else{
-                    free(turma);
                     realloc_statistics(c, statistics);
+                    realloc_class(turma, c, statistics, number_of_students, total_students);
                 }
 
-                turma = create_class(c, statistics, number_of_students);
                 c++;
+                total_students = total_students + number_of_students;
 
                 break;
-            case 2: ;
-                char nome[16];
-                char sobrenome[16];
-                int pos;
-
+            case 2: 
                 printf("----------------------------------------------------------\n");
                 printf("Digite o nome completo do aluno que procura: ");
-                scanf("%s %s", nome, sobrenome);
-                pos = search_StudentByName(turma, 0, (number_of_students - 1), nome, sobrenome);
-                if (pos == -1){
-                    printf("Aluno nao encontrado.\n");
-                }
-                else{
-                    print_student(turma, pos);
-                }
+                scanf("%s %s", name, last_name);
 
+                search_StudentByName(turma, (total_students - 1), (total_students - 1), name, last_name);
                 break;
             case 3:
-                save_statistics (statistics, c);
+                print_statistics (statistics);
                 break;
             case 4:
-                save_class (statistics, c);
+                save_data (statistics, c);                
                 break;
             case 5:
                 free_statistics (statistics, c);
+                free(turma);
                 printf("-------------------------- FIM ---------------------------\n");
                 return 0;
             default:
@@ -124,9 +128,12 @@ int main(){
 
 // AUX FUNCTIONS
 
-void read_student (aluno *student, int number_of_students){
-    for(int i = 0; i < number_of_students; i++){
-        printf("\n------------------------ ALUNO %d -------------------------\n", i+1);
+void read_student (aluno *student, int number_of_students, int total_students, int c){
+    int count = 1;
+
+    for(int i = total_students; i < (number_of_students + total_students); i++){
+        printf("\n------------------------ ALUNO %d -------------------------\n", count);
+        student[i].class = c;
         printf("Nome do aluno: ");
         scanf("%s", student[i].nome);
         printf("Sobrenome do aluno: ");
@@ -141,23 +148,30 @@ void read_student (aluno *student, int number_of_students){
         scanf("%f", &student[i].trabalho);
 
         student[i].media = (float) (student[i].p1 + student[i].p2 + student[i].trabalho)/3;
+
+        count++;
     }
 }
 
 void print_student (aluno *student, int pos){
     printf("----------------------------------------------------------\n");
-    printf("Nome completo do aluno: %s %s", student[pos].nome, student[pos].sobrenome);
-    printf("Numero USP: %d", student[pos].nusp);
-    printf("Nota da primeira prova: %.2f", student[pos].p1);
-    printf("Nota da segunda prova: %.2f", student[pos].p2);
-    printf("Nota do trabalho: %.2f", student[pos].trabalho);
-    printf("Media: %.2f", student[pos].media);
+    printf("Turma: %d\n", student[pos].class);
+    printf("Nome completo do aluno: %s %s\n", student[pos].nome, student[pos].sobrenome);
+    printf("Numero USP: %d\n", student[pos].nusp);
+    printf("Nota da primeira prova: %.1f\n", student[pos].p1);
+    printf("Nota da segunda prova: %.1f\n", student[pos].p2);
+    printf("Nota do trabalho: %.1f\n", student[pos].trabalho);
+    printf("Media: %.2f\n", student[pos].media);
     printf("----------------------------------------------------------\n");
 }
 
 aluno* allocate_StudentArray (int number_of_students){
     aluno* turma = (aluno*) malloc (number_of_students * sizeof(aluno));
     return turma;
+}
+
+void realloc_StudentArray (aluno* turma, int total_students, int number_of_students){
+    turma = (aluno*) realloc (turma, (total_students + number_of_students) * sizeof(aluno));
 }
 
 float** allocate_statistics (int c){
@@ -173,28 +187,28 @@ void realloc_statistics (int c, float** statistics){
     statistics[c - 1] = (float*) malloc(COLUNAS * sizeof(float));
 }
 
-int search_StudentByName (aluno* turma, int pos, int num, char* name, char* sobrenome){
+void search_StudentByName (aluno* turma, int pos, int num, char name[16], char last_name[16]){
 
-    if (num == pos){
-        return -1;
+    if (pos == -1){
+        printf("Aluno nao encontrado.\n");
     }
-    else if (strncmp(name, turma[pos].nome, strlen(turma[pos].nome)) == 0 && strncmp(sobrenome, turma[pos].sobrenome, strlen(turma[pos].sobrenome)) == 0){
-        return (pos);
+    else if (strncmp(name, turma[pos].nome, strlen(turma[pos].nome)) == 0 && strncmp(last_name, turma[pos].sobrenome, strlen(turma[pos].sobrenome)) == 0){
+        print_student(turma, pos);
     }
     else {
-        pos++;
-        search_StudentByName(turma, pos, num, name, sobrenome);
+        pos--;
+        search_StudentByName(turma, pos, num, name, last_name);
     }
 }
 
-void generate_statistics (int c, aluno* turma, int number_of_students, float** statistics){
+void generate_statistics (int c, aluno* turma, int total_students, int number_of_students, float** statistics){
     float soma_p1 = 0;
     float soma_p2 = 0;
     float soma_trab = 0;
     float soma_med = 0;
     float soma_aprovados = 0;
 
-    for (int i = 0; i < number_of_students; i++){
+    for (int i = total_students; i < (number_of_students + total_students); i++){
         soma_p1 = soma_p1 + turma[i].p1;
         soma_p2 = soma_p2 + turma[i].p2;
         soma_trab = soma_trab + turma[i].trabalho;
@@ -209,35 +223,6 @@ void generate_statistics (int c, aluno* turma, int number_of_students, float** s
     statistics[c - 1][4] = (float) soma_aprovados/number_of_students;
 }
 
-void print_statistics (float** statistics){
-    int c;
-
-    printf("Digite o numero da turma que deseja consultar: ");
-    scanf("%d", &c);
-
-    printf("\n------------------------ TURMA %d -------------------------\n", c);
-    printf("Media P1: %.2f\n", statistics[c - 1][0]);
-    printf("Media P2: %.2f\n", statistics[c - 1][1]);
-    printf("Media Trabalho: %.2f\n", statistics[c - 1][2]);
-    printf("Media final: %.2f\n", statistics[c - 1][3]);
-    printf("Porcentagem de aprovados: %.2f\n", (statistics[c - 1][4])*100);
-    printf("-------------------------------------------------------------\n");
-}
-
-void save_statistics (float** statistics, int c){
-    FILE* fp = fopen("estat.bin", "wb");
-
-    if (fp == NULL){
-        printf("Erro na criacao do arquivo.\n");
-    }
-    else{
-        for (int i = 0; i < c; i++){
-            fwrite(statistics[i], sizeof(float), COLUNAS, fp);
-        }
-    }
-    fclose(fp);
-}
-
 void free_statistics (float** statistics, int c){
     for (int i = 0; i < c; i++){
         free (statistics[i]);
@@ -245,18 +230,43 @@ void free_statistics (float** statistics, int c){
     free (statistics);
 }
 
-aluno* create_class (int c, float** statistics, int number_of_students){
+void print_statistics (float** statistics){
+    int number_of_class;
+
+    printf("----------------------------------------------------------\n");
+    printf("Digite o numero da turma que deseja consultar: ");
+    scanf("%d", &number_of_class);
+
+    printf("----------------------- TURMA %d -------------------------\n", number_of_class);
+    printf("Media P1: %.1f\n", statistics[number_of_class - 1][0]);
+    printf("Media P2: %.1f\n", statistics[number_of_class - 1][1]);
+    printf("Media Trabalho: %.1f\n", statistics[number_of_class - 1][2]);
+    printf("Media Final: %.2f\n", statistics[number_of_class - 1][3]);
+    printf("Aprovacao: %.1f\n", (statistics[number_of_class - 1][4])*100);
+    printf("----------------------------------------------------------\n");
+}
+
+aluno* create_class (int c, float** statistics, int number_of_students, int total_students){
     aluno* turma = allocate_StudentArray(number_of_students);
     
     printf("           -- Entre com os dados dos alunos --            \n");
-    read_student(turma, number_of_students);
+    read_student(turma, number_of_students, total_students, c);
 
-    generate_statistics (c, turma, number_of_students, statistics);
+    generate_statistics (c, turma, total_students, number_of_students, statistics);
 
     return turma;
 }
 
-void save_class (float** statistics, int c){
+void realloc_class (aluno* turma, int c, float** statistics, int number_of_students, int total_students){
+    realloc_StudentArray (turma, total_students, number_of_students);
+
+    printf("           -- Entre com os dados dos alunos --            \n");
+    read_student(turma, number_of_students, total_students, c);
+
+    generate_statistics (c, turma, total_students, number_of_students, statistics);
+}
+
+void save_data (float** statistics, int c){
     char name_file[30];
 
     for (int i = 0; i < (c - 1); i++){
@@ -265,15 +275,25 @@ void save_class (float** statistics, int c){
 
         FILE* arquivo = fopen(name_file, "w");
 
-        fprintf(arquivo, "Turma %d\n", i + 1);
-        fprintf(arquivo, "Media P1: %.2f\n", statistics[i][0]);
-        fprintf(arquivo, "Media P2: %.2f\n", statistics[i][1]);
-        fprintf(arquivo, "Media Trabalho: %.2f\n", statistics[i][2]);
-        fprintf(arquivo, "Media final: %.2f\n", statistics[i][3]);
-        fprintf(arquivo, "Porcentagem de aprovados: %.2f\n", (statistics[i][4])*100);
+        if (arquivo == NULL) printf("Erro na criacao do arquivo.\n");
+
+        else {
+            fprintf(arquivo, "Turma %d\n", i + 1);
+            fprintf(arquivo, "Media P1: %.2f\n", statistics[i][0]);
+            fprintf(arquivo, "Media P2: %.2f\n", statistics[i][1]);
+            fprintf(arquivo, "Media Trabalho: %.2f\n", statistics[i][2]);
+            fprintf(arquivo, "Media final: %.2f\n", statistics[i][3]);
+            fprintf(arquivo, "Porcentagem de aprovados: %.2f\n", (statistics[i][4])*100);
+        }
 
         fclose(arquivo);
     }
+
+    FILE* file = fopen("estat.bin", "wb");
+    for (int i = 0; i < (c - 1); i++){
+        fwrite(statistics[i], sizeof(float), COLUNAS, file);
+    }
+    fclose(file);
 }
 
 // END AUX FUNCTION
