@@ -99,7 +99,7 @@ maior do que 5.
 Retorno: matriz de elementos float.
 */
 
-void realloc_statistics (int c, float** statistics);
+float** realloc_statistics (int c, float** statistics);
 /*
 Protótipo: void realloc_statistics (int , float** );
 
@@ -107,6 +107,8 @@ Parâmetros: (int) número de turmas cadastradas e (float**) matriz de elementos
 
 Objetivos: realoca dinamicamente a matriz "statistics" a cada nova turma cadastrada, visando aumentar o seu número de linhas,
 de forma a comportar uma nova turma.
+
+Retorno: matriz de elementos float.
 */
 
 void generate_statistics (int c, aluno* student, int total_students, int number_of_students, float** statistics);
@@ -153,7 +155,7 @@ cadastro de uma turma. Essa função cria a primeira turma e as demais turmas s�
 Retorno: array de structs aluno.
 */
 
-void realloc_class (aluno* student, int c, float** statistics, int number_of_students, int total_students);
+aluno* realloc_class (aluno* student, int c, float** statistics, int number_of_students, int total_students);
 /*
 Protótipo: aluno* realloc_class (aluno* , int , float** , int , int );
 
@@ -162,6 +164,8 @@ das turmas, (int) número de estudantes da turma que está sendo cadastrada e (i
 
 Objetivos: função que aglutina as funções realloc_StudentArray(), read_student() e generate_statistics(), visando formar um bloco de 
 cadastro de uma turma.
+
+Retorno: array de structs aluno.
 */
 
 void save_data (float** statistics, int c);
@@ -217,10 +221,10 @@ int main(){
                     statistics = allocate_statistics(c);
                     student = create_class(c, statistics, number_of_students, total_students);
                 }
-
+                // Cadastro das demais turmas
                 else{
-                    realloc_statistics(c, statistics);
-                    realloc_class(student, c, statistics, number_of_students, total_students);
+                    statistics = realloc_statistics(c, statistics);
+                    student = realloc_class(student, c, statistics, number_of_students, total_students);
                 }
 
                 c++;
@@ -311,9 +315,11 @@ float** allocate_statistics (int c){
     return statistics;
 }
 
-void realloc_statistics (int c, float** statistics){
+float** realloc_statistics (int c, float** statistics){
     statistics = (float **) realloc (statistics, c * sizeof(float *));
     statistics[c - 1] = (float*) malloc(COLUNAS * sizeof(float));
+
+    return statistics;
 }
 
 void search_StudentByName (aluno* student, int pos, int num, char name[16], char last_name[16]){
@@ -386,13 +392,15 @@ aluno* create_class (int c, float** statistics, int number_of_students, int tota
     return student;
 }
 
-void realloc_class (aluno* student, int c, float** statistics, int number_of_students, int total_students){
+aluno* realloc_class (aluno* student, int c, float** statistics, int number_of_students, int total_students){
     realloc_StudentArray (student, total_students, number_of_students);
 
     printf("           -- Entre com os dados dos alunos --            \n");
     read_student(student, number_of_students, total_students, c);
 
     generate_statistics (c, student, total_students, number_of_students, statistics);
+
+    return student;
 }
 
 void save_data (float** statistics, int c){
